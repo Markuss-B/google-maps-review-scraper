@@ -71,7 +71,7 @@ export async function paginateReviews(url, sort, pages, search_query, clean, ini
     let nextPage = initialData[1]?.replace(/"/g, "");
     let currentPage = 2;
     while (nextPage && (pages === "max" || currentPage <= +pages) && (maxReviewCount === "max" || reviews.length < maxReviewCount)) {
-        console.log(`Scraping page ${currentPage}...`);
+        console.log(`${reviews.length} reviews scraped. Scraping page ${currentPage}...`);
         const data = await fetchReviews(url, sort, nextPage, search_query);
 
         if (!data || !Array.isArray(data) || data.length < 3 || !Array.isArray(data[2])) {
@@ -84,8 +84,6 @@ export async function paginateReviews(url, sort, pages, search_query, clean, ini
             const lang = review[2][14]?.[0];
             return languageFilter === "any" || lang === languageFilter;
         });
-
-        console.log(`Found ${newFilteredReviews.length} ${languageFilter} reviews on page ${currentPage}`);
 
         reviews = [...reviews, ...newFilteredReviews];
         nextPage = data[1]?.replace(/"/g, "");
