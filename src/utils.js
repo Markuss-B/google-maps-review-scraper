@@ -59,16 +59,35 @@ export async function fetchReviews(url, sort, nextPage = "", search_query = "") 
  * @param {string} search_query - Search query to filter reviews.
  * @param {boolean} clean - Whether to clean and parse the data.
  * @param {Array} initialData - Initial data containing reviews and next page token.
+ * @param {string} languageFilter - Filter for review language, default "any".
+ * @param {string|number} maxReviewCount - Number of reviews ir "max".
  * @returns {Promise<Array>} Array of reviews or parsed reviews.
  */
-export async function paginateReviews(url, sort, pages, search_query, clean, initialData) {
-    let reviews = initialData[2];
+export async function paginateReviews(url, sort, pages, search_query, clean, initialData, languageFilter="any", maxReviewCount="max") {
+    let reviews = initialData[2].filter(([review]) => {
+        const lang = review[2][14]?.[0];
+        return languageFilter === "any" || lang === languageFilter;
+    });
     let nextPage = initialData[1]?.replace(/"/g, "");
     let currentPage = 2;
-    while (nextPage && (pages === "max" || currentPage <= +pages)) {
+    while (nextPage && (pages === "max" || currentPage <= +pages) && (maxReviewCount === "max" || reviews.length < maxReviewCount)) {
         console.log(`Scraping page ${currentPage}...`);
         const data = await fetchReviews(url, sort, nextPage, search_query);
-        reviews = [...reviews, ...data[2]];
+
+        if (!data || !Array.isArray(data) || data.length < 3 || !Array.isArray(data[2])) {
+            console.warn(`Unexpected or incomplete data on page ${currentPage}. Stopping pagination.`);
+            break;
+        }
+
+        // language filter
+        const newFilteredReviews = data[2].filter(([review]) => {
+            const lang = review[2][14]?.[0];
+            return languageFilter === "any" || lang === languageFilter;
+        });
+
+        console.log(`Found ${newFilteredReviews.length} ${languageFilter} reviews on page ${currentPage}`);
+
+        reviews = [...reviews, ...newFilteredReviews];
         nextPage = data[1]?.replace(/"/g, "");
         if (!nextPage) break;
         await new Promise(resolve => setTimeout(resolve, 1000)); // Avoid rate-limiting

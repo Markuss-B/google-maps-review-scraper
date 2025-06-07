@@ -14,7 +14,7 @@ import parseReviews from "./src/parser.js";
  * @returns {Promise<Array|number>} - Returns an array of reviews or 0 if no reviews are found.
  * @throws {Error} - Throws an error if the URL is not provided or if fetching reviews fails.
  */
-export async function scraper(url, { sort_type = "relevent", search_query = "", pages = "max", clean = false } = {}) {
+export async function scraper(url, { sort_type = "relevent", search_query = "", pages = "max", clean = false, languageFilter = "any", maxReviewCount = "max" } = {}) {
     try {
         validateParams(url, sort_type, pages, clean);
 
@@ -25,7 +25,7 @@ export async function scraper(url, { sort_type = "relevent", search_query = "", 
 
         if (!initialData[1] || pages === 1) return clean ? parseReviews(initialData[2]) : initialData[2];
 
-        return await paginateReviews(url, sort, pages, search_query, clean, initialData);
+        return await paginateReviews(url, sort, pages, search_query, clean, initialData, languageFilter, maxReviewCount);
     } catch (e) {
         console.error(e);
         return;
