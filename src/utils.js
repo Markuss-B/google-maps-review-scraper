@@ -61,9 +61,12 @@ export async function fetchReviews(url, sort, nextPage = "", search_query = "") 
  * @param {Array} initialData - Initial data containing reviews and next page token.
  * @param {string} languageFilter - Filter for review language, default "any".
  * @param {string|number} maxReviewCount - Number of reviews ir "max".
+ * @param {string|number} maxReviewCount -  Number of consecutive pages allowed to return zero matching reviews before stopping early.
  * @returns {Promise<Array>} Array of reviews or parsed reviews.
  */
-export async function paginateReviews(url, sort, pages, search_query, clean, initialData, languageFilter="any", maxReviewCount="max") {
+export async function paginateReviews(url, sort, pages, search_query, clean, initialData, languageFilter="any", maxReviewCount="max", languagePatience=null) {
+    let languageMissCount = 0;
+    
     let reviews = initialData[2].filter(([review]) => {
         const lang = review[2][14]?.[0];
         return languageFilter === "any" || lang === languageFilter;
@@ -84,6 +87,18 @@ export async function paginateReviews(url, sort, pages, search_query, clean, ini
             const lang = review[2][14]?.[0];
             return languageFilter === "any" || lang === languageFilter;
         });
+
+        if (languagePatience !== null) {
+            if (newFilteredReviews.length === 0) {
+                languageMissCount++;
+                if (languageMissCount >= languagePatience) {
+                    console.log(`Stopping early after ${languageMissCount} pages with no ${languageFilter} reviews.`);
+                    break;
+                }
+            } else {
+                languageMissCount = 0;
+            }
+        }
 
         reviews = [...reviews, ...newFilteredReviews];
         nextPage = data[1]?.replace(/"/g, "");
